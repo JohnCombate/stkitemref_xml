@@ -1,0 +1,4 @@
+﻿<Table TableName="INItemClass">
+    <Column TableName="INItemClass" ColumnName="UsrLineCntr" ColumnType="int" AllowNull="True" DecimalPrecision="0" DecimalLength="0" IsNewColumn="True" IsUnicode="True" />
+    <Column TableName="INItemClass" ColumnName="UsrEnableCustomNumbering" ColumnType="bool" AllowNull="True" DecimalPrecision="0" DecimalLength="0" IsNewColumn="True" IsUnicode="True" />
+</Table>

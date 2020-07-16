@@ -1,0 +1,240 @@
+﻿<Graph ClassName="INItemClassMaintExtCustomRef" Source="#CDATA" IsNew="True" FileType="NewGraph">
+    <CDATA name="Source"><![CDATA[using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.Linq;
+using PX.Common;
+using PX.Data;
+using PX.Data.Maintenance;
+using PX.Objects.CR;
+using PX.Objects.CS;
+using PX.SM;
+using PX.Objects;
+using PX.Objects.IN;
+using ItemCustomRef;
+
+namespace PX.Objects.IN
+{
+    public class INItemClassMaintExtCustomRef : PXGraphExtension<INItemClassMaint>
+    {
+        public PXOrderedSelect<
+            INItemClass,
+            INItemClassInvNumbering,
+            Where<INItemClassInvNumbering.itemClassID, Equal<Current<INItemClass.itemClassID>>>,
+            OrderBy<
+                Asc<INItemClassInvNumbering.itemClassID,
+                Asc<INItemClassInvNumbering.sortOrder>>>>
+            ItemNumbering;
+
+        #region Event Handlers
+        public void INItemClass_RowSelected(PXCache cache, PXRowSelectedEventArgs e)
+        {
+            var row = (INItemClass)e.Row;
+            if (row == null) return;
+
+            var rowExt = PXCache<INItemClass>.GetExtension<INItemClassExtCustomRef>(row);
+            bool isCustomNumbering = rowExt.UsrEnableCustomNumbering == true;
+            ItemNumbering.Cache.AllowSelect = NumberingInfo.Cache.AllowSelect =  isCustomNumbering;
+
+            if (isCustomNumbering)
+            {
+                foreach (INItemClassInvNumbering numbering in ItemNumbering.Select().RowCast<INItemClassInvNumbering>().Where(n => n.IsAutoNumber == true))
+                {
+                    if (numbering.LastNumber != null && numbering.EndNumber != null && numbering.WarningNumber != null)
+                    {
+                        long lastNbr = long.Parse(numbering.LastNumber);
+                        long warnNbr = long.Parse(numbering.WarningNumber);
+                        long endNbr = long.Parse(numbering.EndNumber);
+
+                        if (lastNbr == endNbr)
+                        {
+                            cache.RaiseExceptionHandling<INItemClass.itemClassCD>(row, row.ItemClassID,
+                                new PXSetPropertyException("Error: Cannot generate the next number for the sequence.", PXErrorLevel.Warning));
+                            break;
+                              
+                        }
+                        else if (lastNbr >= warnNbr)
+                        {
+                            cache.RaiseExceptionHandling<INItemClass.itemClassCD>(row, row.ItemClassID,
+                                new PXSetPropertyException("Warning: The auto-number is about to reach its end number.", PXErrorLevel.Warning));
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+
+        public void INItemClass_RowPersisting(PXCache cache, PXRowPersistingEventArgs e)
+        {
+            var row = (INItemClass)e.Row;
+            if (row == null) return;
+
+            var rowExt = PXCache<INItemClass>.GetExtension<INItemClassExtCustomRef>(row);
+            if (rowExt.UsrEnableCustomNumbering == true)
+            {
+                Dimension inventoryNumbering = PXSelect<
+                    Dimension, 
+                    Where<Dimension.dimensionID, Equal<Required<Dimension.dimensionID>>>>
+                    .Select(Base, "INVENTORY");
+
+                if (inventoryNumbering.Length < NumberingInfo.Current.Length)
+                    throw new PXException("The total length of the item auto-numbering exceeds the length of the segmented key for Inventory Items.");
+            }
+        }
+
+        public void INItemClassInvNumbering_EndNumber_FieldDefaulting(PXCache cache, PXFieldDefaultingEventArgs e)
+        {
+            var row = (INItemClassInvNumbering)e.Row;
+
+            if (row != null)
+            {
+
+                if (!string.IsNullOrEmpty(row.StartNumber) && string.IsNullOrEmpty(row.EndNumber))
+
+                {
+                    char[] result = row.StartNumber.ToCharArray();
+
+                    for (int i = result.Length - 1; i >= 0; i--)
+                    {
+                        if (char.IsDigit(result[i]))
+                        {
+                            result[i] = '9';
+                        }
+                        else
+                            break;
+                    }
+
+                    e.NewValue = new string(result);
+                }
+            }
+        }
+
+        public void INItemClassInvNumbering_WarningNumber_FieldDefaulting(PXCache cache, PXFieldDefaultingEventArgs e)
+        {
+            var row = (INItemClassInvNumbering)e.Row;
+
+            if (row != null)
+            {
+                if (!string.IsNullOrEmpty(row.EndNumber) && string.IsNullOrEmpty(row.WarningNumber))
+                {
+                    if (row.EndNumber.Length >= 3)
+                    {
+                        if (char.IsDigit(row.EndNumber[row.EndNumber.Length - 1]) &&
+                            char.IsDigit(row.EndNumber[row.EndNumber.Length - 2]) &&
+                            char.IsDigit(row.EndNumber[row.EndNumber.Length - 3])
+                            )
+                        {
+                            int number = int.Parse(row.EndNumber.Substring(row.EndNumber.Length - 3, 3));
+
+                            if (number > 100)
+                            {
+                                int warningNumber = number - 100;
+
+                                string str = string.Format("{0:000}", warningNumber);
+                                e.NewValue = row.EndNumber.Substring(0, row.EndNumber.Length - 3) + str;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        public void INItemClassInvNumbering_StartNumber_FieldUpdated(PXCache cache, PXFieldUpdatedEventArgs e)
+        {
+            var row = (INItemClassInvNumbering)e.Row;
+            if (row == null) return;
+
+            if (row.StartNumber != null)
+            {
+                cache.SetValue<INItemClassInvNumbering.lastNumber>(row, row.StartNumber);
+                cache.SetDefaultExt<INItemClassInvNumbering.endNumber>(row);
+                cache.SetDefaultExt<INItemClassInvNumbering.warningNumber>(row);
+            }
+        }
+        #endregion
+
+        #region Unbound DAC/Views
+        public class INNumberingInfo : IBqlTable
+        {
+            #region ProjectedInventoryID
+            [PXString(1000)]
+            [PXUIField(DisplayName = "Projected Inventory ID", Enabled = false)]
+            public virtual string ProjectedInventoryID { get; set; }
+            public abstract class projectedInventoryID : PX.Data.BQL.BqlString.Field<projectedInventoryID> { }
+            #endregion
+
+            #region Length
+            [PXInt]
+            [PXUIField(DisplayName = "Length", Enabled = false)]
+            public virtual int? Length { get; set; }
+            public abstract class length : PX.Data.BQL.BqlInt.Field<length> { }
+            #endregion
+
+        }
+
+        public PXSelect<INNumberingInfo> NumberingInfo;
+        public virtual IEnumerable numberingInfo()
+        {
+            return new List<INNumberingInfo>() {
+                new INNumberingInfo()
+                {
+                    ProjectedInventoryID = ProjectInventoryID(Base.itemclass.Current),
+                    Length = ProjectInventoryID(Base.itemclass.Current).Length
+                }
+            };
+        }
+        #endregion
+
+        #region Methods
+        public string ProjectInventoryID(INItemClass itemClass)
+        {
+            string generatedID = String.Empty;
+
+            List<INItemClassInvNumbering> numberingList = new List<INItemClassInvNumbering>();
+
+            foreach (INItemClassInvNumbering res in ItemNumbering.Select())
+            {
+                numberingList.Add(res);
+            }
+            if (numberingList.Count == 0)
+                return String.Empty;
+
+            foreach (INItemClassInvNumbering seg in numberingList)
+            {
+                if (seg.IsAutoNumber == false)
+                    generatedID += seg.ManualValue;
+                else
+                {
+                    if (seg.LastNumber != null)
+                    {
+                        if (!IsEndNbr(seg.LastNumber))
+                        {
+                            string nextNbr = AutoNumberAttribute.NextNumber(seg.LastNumber, 1);
+
+                            generatedID += nextNbr;
+                        }
+                    }
+                }
+
+                if (seg.Separator != " " && numberingList.IndexOf(seg) < numberingList.Count - 1)
+                    generatedID += seg.Separator;
+
+            }
+            return generatedID;
+        }
+
+        public bool IsEndNbr(string number)
+        {
+            char[] result = number.ToCharArray();
+
+            for (int i = result.Length - 1; i >= 0; i--)
+            {
+                if (result[i] != '9')
+                    return false;
+            }
+            return true;
+        }
+        #endregion
+    }
+}]]></CDATA>
+</Graph>

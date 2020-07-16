@@ -1,0 +1,30 @@
+﻿<Graph ClassName="INItemClassExtCustomRef" Source="#CDATA" IsNew="True" FileType="NewGraph">
+    <CDATA name="Source"><![CDATA[using PX.Data.ReferentialIntegrity.Attributes;
+using PX.Data;
+using PX.Objects.IN;
+using PX.Objects;
+using System.Collections.Generic;
+using System;
+
+namespace PX.Objects.IN
+{
+    public class INItemClassExtCustomRef : PXCacheExtension<PX.Objects.IN.INItemClass>
+    {
+        #region UsrCustomField
+        [PXDBInt]
+        [PXDefault(0, PersistingCheck = PXPersistingCheck.Nothing)]
+        [PXUIField(DisplayName = "Line Cntr.")]
+        public virtual int? UsrLineCntr { get; set; }
+        public abstract class usrLineCntr : PX.Data.BQL.BqlInt.Field<usrLineCntr> { }
+        #endregion
+
+        #region UsrEnableCustomNumbering
+        [PXDBBool]
+        [PXDefault(false, PersistingCheck = PXPersistingCheck.Nothing)]
+        [PXUIField(DisplayName = "Activate Custom Numbering")]
+        public virtual bool? UsrEnableCustomNumbering { get; set; }
+        public abstract class usrEnableCustomNumbering : PX.Data.BQL.BqlBool.Field<usrEnableCustomNumbering> { }
+        #endregion
+    }
+}]]></CDATA>
+</Graph>

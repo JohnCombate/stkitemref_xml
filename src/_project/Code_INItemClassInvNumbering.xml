@@ -1,0 +1,223 @@
+﻿<Graph ClassName="INItemClassInvNumbering" Source="#CDATA" IsNew="True" FileType="NewDac">
+    <CDATA name="Source"><![CDATA[using System;
+using PX.Data;
+using PX.Objects.IN;
+
+namespace ItemCustomRef
+{
+    [Serializable]
+    public class INItemClassInvNumbering : IBqlTable, ISortOrder
+    {
+        #region ItemNumberingID
+        [PXDBIdentity()]
+        [PXUIField(DisplayName = "Item Numbering ID")]
+        public virtual int? ItemNumberingID { get; set; }
+        public abstract class itemNumberingID : PX.Data.BQL.BqlInt.Field<itemNumberingID> { }
+        #endregion
+
+        #region ItemClassID
+        [PXDBInt(IsKey = true)]
+        [PXLineNbr(typeof(INItemClassExtCustomRef.usrLineCntr))]
+        [PXUIField(DisplayName = "Line Nbr.")]
+        public virtual int? LineNbr { get; set; }
+        public abstract class lineNbr : PX.Data.BQL.BqlInt.Field<lineNbr> { }
+        #endregion
+
+        #region ItemClassID
+        [PXDBInt(IsKey = true)]
+        [PXDBDefault(typeof(INItemClass.itemClassID))]
+        [PXUIField(DisplayName = "Item Class ID")]
+        public virtual int? ItemClassID { get; set; }
+        public abstract class itemClassID : PX.Data.BQL.BqlInt.Field<itemClassID> { }
+        #endregion
+
+        #region SortOrder
+        [PXDBInt()]
+        [PXUIField(DisplayName = "Sort Order")]
+        public virtual int? SortOrder { get; set; }
+        public abstract class sortOrder : PX.Data.BQL.BqlInt.Field<sortOrder> { }
+        #endregion
+
+        #region IsAutoNumber
+        [PXDBBool()]
+        [PXDefault(false)]
+        [PXUIField(DisplayName = "Auto Number")]
+        public virtual bool? IsAutoNumber { get; set; }
+        public abstract class isAutoNumber : PX.Data.BQL.BqlBool.Field<isAutoNumber> { }
+        #endregion
+
+        #region ManualValue
+        [PXDBString(15, IsUnicode = true, InputMask = "")]
+        [PXUIField(DisplayName = "Manual Value")]
+        [PXUIEnabled(typeof(Where<isAutoNumber, Equal<False>>))]
+        [PXDefault(PersistingCheck = PXPersistingCheck.Nothing)]
+        [PXUIRequired(typeof(Where<isAutoNumber, Equal<False>>))]
+        public virtual string ManualValue { get; set; }
+        public abstract class manualValue : PX.Data.BQL.BqlString.Field<manualValue> { }
+        #endregion
+
+        #region StartNumber
+        [PXDBString(15, IsUnicode = true, InputMask = "###############")]
+        [PXUIField(DisplayName = "Start Number")]
+        [PXUIEnabled(typeof(Where<isAutoNumber, Equal<True>>))]
+        [PXDefault(PersistingCheck = PXPersistingCheck.Nothing)]
+        [PXUIRequired(typeof(Where<isAutoNumber, Equal<True>>))]
+        public virtual string StartNumber { get; set; }
+        public abstract class startNumber : PX.Data.BQL.BqlString.Field<startNumber> { }
+        #endregion
+
+        #region EndNumber
+        [PXDBString(15, IsUnicode = true, InputMask = "###############")]
+        [PXUIField(DisplayName = "End Number")]
+        [PXUIEnabled(typeof(Where<isAutoNumber, Equal<True>>))]
+        [PXDefault(PersistingCheck = PXPersistingCheck.Nothing)]
+        [PXUIRequired(typeof(Where<isAutoNumber, Equal<True>>))]
+        public virtual string EndNumber { get; set; }
+        public abstract class endNumber : PX.Data.BQL.BqlString.Field<endNumber> { }
+        #endregion
+
+        #region LastNumber
+        [PXDBString(15, IsUnicode = true, InputMask = "###############")]
+        [PXUIField(DisplayName = "Last Number")]
+        [PXUIEnabled(typeof(Where<isAutoNumber, Equal<True>>))]
+        [PXDefault(PersistingCheck = PXPersistingCheck.Nothing)]
+        [PXUIRequired(typeof(Where<isAutoNumber, Equal<True>>))]
+        public virtual string LastNumber { get; set; }
+        public abstract class lastNumber : PX.Data.BQL.BqlString.Field<lastNumber> { }
+        #endregion
+
+        #region WarningNumber
+        [PXDBString(15, IsUnicode = true, InputMask = "###############")]
+        [PXUIField(DisplayName = "Warning Number")]
+        [PXUIEnabled(typeof(Where<isAutoNumber, Equal<True>>))]
+        [PXDefault(PersistingCheck = PXPersistingCheck.Nothing)]
+        [PXUIRequired(typeof(Where<isAutoNumber, Equal<True>>))]
+        public virtual string WarningNumber { get; set; }
+        public abstract class warningNumber : PX.Data.BQL.BqlString.Field<warningNumber> { }
+        #endregion
+
+        #region Separator
+        [PXDBString(1, IsUnicode = true, IsFixed = true, InputMask = ">C")]
+        [PXDefault("-", PersistingCheck = PXPersistingCheck.Nothing)]
+        [PXUIField(DisplayName = "Separator")]
+        public virtual string Separator { get; set; }
+        public abstract class separator : PX.Data.BQL.BqlString.Field<warningNumber> { }
+        #endregion
+
+        #region CreatedByID
+        public abstract class createdByID : PX.Data.BQL.BqlGuid.Field<createdByID> { }
+        protected Guid? _CreatedByID;
+        [PXDBCreatedByID()]
+        public virtual Guid? CreatedByID
+        {
+            get
+            {
+                return this._CreatedByID;
+            }
+            set
+            {
+                this._CreatedByID = value;
+            }
+        }
+        #endregion
+        #region CreatedByScreenID
+        public abstract class createdByScreenID : PX.Data.BQL.BqlString.Field<createdByScreenID> { }
+        protected String _CreatedByScreenID;
+        [PXDBCreatedByScreenID()]
+        public virtual String CreatedByScreenID
+        {
+            get
+            {
+                return this._CreatedByScreenID;
+            }
+            set
+            {
+                this._CreatedByScreenID = value;
+            }
+        }
+        #endregion
+        #region CreatedDateTime
+        public abstract class createdDateTime : PX.Data.BQL.BqlDateTime.Field<createdDateTime> { }
+        protected DateTime? _CreatedDateTime;
+        [PXDBCreatedDateTime]
+        [PXUIField(DisplayName = PXDBLastModifiedByIDAttribute.DisplayFieldNames.CreatedDateTime, Enabled = false, IsReadOnly = true)]
+        public virtual DateTime? CreatedDateTime
+        {
+            get
+            {
+                return this._CreatedDateTime;
+            }
+            set
+            {
+                this._CreatedDateTime = value;
+            }
+        }
+        #endregion
+        #region LastModifiedByID
+        public abstract class lastModifiedByID : PX.Data.BQL.BqlGuid.Field<lastModifiedByID> { }
+        protected Guid? _LastModifiedByID;
+        [PXDBLastModifiedByID()]
+        public virtual Guid? LastModifiedByID
+        {
+            get
+            {
+                return this._LastModifiedByID;
+            }
+            set
+            {
+                this._LastModifiedByID = value;
+            }
+        }
+        #endregion
+        #region LastModifiedByScreenID
+        public abstract class lastModifiedByScreenID : PX.Data.BQL.BqlString.Field<lastModifiedByScreenID> { }
+        protected String _LastModifiedByScreenID;
+        [PXDBLastModifiedByScreenID()]
+        public virtual String LastModifiedByScreenID
+        {
+            get
+            {
+                return this._LastModifiedByScreenID;
+            }
+            set
+            {
+                this._LastModifiedByScreenID = value;
+            }
+        }
+        #endregion
+        #region LastModifiedDateTime
+        public abstract class lastModifiedDateTime : PX.Data.BQL.BqlDateTime.Field<lastModifiedDateTime> { }
+        protected DateTime? _LastModifiedDateTime;
+        [PXDBLastModifiedDateTime]
+        [PXUIField(DisplayName = PXDBLastModifiedByIDAttribute.DisplayFieldNames.LastModifiedDateTime, Enabled = false, IsReadOnly = true)]
+        public virtual DateTime? LastModifiedDateTime
+        {
+            get
+            {
+                return this._LastModifiedDateTime;
+            }
+            set
+            {
+                this._LastModifiedDateTime = value;
+            }
+        }
+        #endregion
+        #region tstamp
+        public abstract class Tstamp : PX.Data.BQL.BqlByteArray.Field<Tstamp> { }
+        protected Byte[] _tstamp;
+        [PXDBTimestamp()]
+        public virtual Byte[] tstamp
+        {
+            get
+            {
+                return this._tstamp;
+            }
+            set
+            {
+                this._tstamp = value;
+            }
+        }
+        #endregion
+    }
+}]]></CDATA>
+</Graph>

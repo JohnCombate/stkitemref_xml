@@ -1,0 +1,96 @@
+﻿<Graph ClassName="InventoryItemMaintExtCustomRef" Source="#CDATA" IsNew="True" FileType="NewGraph">
+    <CDATA name="Source"><![CDATA[using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Text.RegularExpressions;
+using PX.Common;
+using PX.Data;
+using PX.Objects.CR;
+using PX.Objects.CS;
+using PX.Objects;
+using PX.Objects.IN;
+using ItemCustomRef;
+
+namespace PX.Objects.IN
+{
+    public class InventoryItemMaintExtCustomRef : PXGraphExtension<InventoryItemMaint>
+    {
+        #region Event Handlers
+        public void InventoryItem_RowPersisting(PXCache cache, PXRowPersistingEventArgs e)
+        {
+            var row = (InventoryItem)e.Row;
+            if (row == null) return;
+
+            if (e.Operation == PXDBOperation.Insert)
+            {
+                INItemClass itemClass = Base.ItemClass.Select(row.ItemClassID);
+                if (itemClass == null) return;
+                var itemClassExt = PXCache<INItemClass>.GetExtension<INItemClassExtCustomRef>(itemClass);
+
+                if (itemClassExt.UsrEnableCustomNumbering == true)
+                    cache.SetValueExt<InventoryItem.inventoryCD>(row, GenerateInventoryID(itemClass));
+            }
+        }
+
+        public string GenerateInventoryID(INItemClass itemClass)
+        {
+            string generatedID = String.Empty;
+
+            List<INItemClassInvNumbering> numberingList = RetrieveNumberingSetting(itemClass);
+
+            
+            if (numberingList.Count == 0)
+                throw new PXException("Numbering setup for the item class not found.");
+
+            foreach (INItemClassInvNumbering seg in numberingList)
+            {
+                if (seg.IsAutoNumber == false)
+                    generatedID += seg.ManualValue;
+                else
+                {
+                    string nextNbr = AutoNumberAttribute.NextNumber(seg.LastNumber, 1);
+
+                    generatedID += nextNbr;
+
+                    UpdateLastNbr(seg, nextNbr);
+                }
+
+                if (seg.Separator != " " && numberingList.IndexOf(seg) < numberingList.Count - 1)
+                    generatedID += seg.Separator;
+                
+            }
+            return generatedID;
+        }
+
+        public List<INItemClassInvNumbering> RetrieveNumberingSetting(INItemClass itemClass)
+        {
+            List<INItemClassInvNumbering> numberingList = new List<INItemClassInvNumbering>();
+
+            foreach (INItemClassInvNumbering res in PXSelect<
+                INItemClassInvNumbering,
+                Where<INItemClassInvNumbering.itemClassID, Equal<Required<INItemClassInvNumbering.itemClassID>>>,
+                OrderBy<
+                    Asc<INItemClassInvNumbering.sortOrder>>>
+                .Select(Base, itemClass.ItemClassID))
+            {
+                numberingList.Add(res);
+            }
+
+            return numberingList;
+        }
+
+        public void UpdateLastNbr(INItemClassInvNumbering numbering, string newLastNbr)
+        {
+            var graph = PXGraph.CreateInstance<INItemClassMaint>();
+
+            numbering.LastNumber = newLastNbr;
+            graph.GetExtension<INItemClassMaintExtCustomRef>().ItemNumbering.Update(numbering);
+
+            graph.Persist();
+        }
+        #endregion
+    }
+}]]></CDATA>
+</Graph>
